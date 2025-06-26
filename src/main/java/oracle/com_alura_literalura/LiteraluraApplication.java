@@ -1,6 +1,6 @@
+// src/main/java/oracle/com_alura_literalura/LiteraluraApplication.java
 package oracle.com_alura_literalura;
 
-import oracle.com_alura_literalura.controller.LivroController;
 import oracle.com_alura_literalura.service.CatalogoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -24,11 +24,10 @@ public class LiteraluraApplication implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         Scanner scanner = new Scanner(System.in);
 
         while (true) {
-            // Exibe o menu
             System.out.println("Escolha o número da sua opção:");
             System.out.println("1 - Buscar Livro pelo título");
             System.out.println("2 - Listar Livros registrados");
@@ -37,46 +36,36 @@ public class LiteraluraApplication implements CommandLineRunner {
             System.out.println("5 - Listar Livros em um determinado idioma");
             System.out.println("0 - Sair");
 
-            // Lê a entrada do usuário
             int opcao = scanner.nextInt();
-            scanner.nextLine();  // Limpa o buffer do scanner
+            scanner.nextLine(); // limpa o buffer
 
             switch (opcao) {
                 case 1:
-                    // Buscar livro pelo título
                     System.out.print("Digite o título do livro: ");
                     String titulo = scanner.nextLine();
-                    // Chama o método para buscar o livro
                     catalogoService.buscarLivroPorTitulo(titulo);
                     break;
                 case 2:
-                    // Listar livros registrados
-                    catalogoService.listarLivros().forEach(livro -> System.out.println(livro.getTitulo()));
+                    catalogoService.exibirTodosOsLivros();
                     break;
                 case 3:
-                    // Listar autores registrados
-                    catalogoService.listarAutores().forEach(autor -> System.out.println(autor.getNome()));
+                    catalogoService.exibirTodosAutores();
                     break;
                 case 4:
-                    // Listar autores vivos em um determinado ano
                     System.out.print("Digite o ano: ");
                     int ano = scanner.nextInt();
-                    catalogoService.listarAutoresVivosEm(ano).forEach(autor -> System.out.println(autor.getNome()));
+                    scanner.nextLine();
+                    catalogoService.listarAutoresVivosEm(ano)
+                            .forEach(a -> System.out.println("Autor: " + a.getNome()));
                     break;
                 case 5:
-                    // Listar livros em um determinado idioma
-                    System.out.println("Escolha um idioma para realizar a busca:");
-                    System.out.println("es - Espanhol");
-                    System.out.println("en - Inglês");
-                    System.out.println("fr - Francês");
-                    System.out.println("pt - Português");
-
+                    System.out.println("Idiomas disponíveis: es, en, fr, pt");
                     System.out.print("Digite o idioma: ");
                     String idioma = scanner.nextLine();
-                    catalogoService.listarLivrosPorIdioma(idioma).forEach(livro -> System.out.println(livro.getTitulo()));
+                    catalogoService.listarLivrosPorIdioma(idioma)
+                            .forEach(l -> System.out.println("Título: " + l.getTitulo()));
                     break;
                 case 0:
-                    // Sair
                     System.out.println("Saindo...");
                     return;
                 default:

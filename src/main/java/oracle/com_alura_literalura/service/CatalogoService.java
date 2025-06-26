@@ -1,3 +1,4 @@
+// src/main/java/oracle/com_alura_literalura/service/CatalogoService.java
 package oracle.com_alura_literalura.service;
 
 import oracle.com_alura_literalura.model.Livro;
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -29,22 +31,24 @@ public class CatalogoService {
         this.autorRepository = autorRepository;
     }
 
+    /**
+     * Busca um livro na API Gutendex, salva/atualiza no banco e exibe no console.
+     */
     public Livro buscarLivroPorTitulo(String titulo) {
         var livroApi = gutendexService
                 .buscarPrimeiroLivroPorTitulo(titulo)
                 .orElseThrow(() -> new IllegalArgumentException("Livro não encontrado na API"));
 
-        // 1) Busco no banco por ID do Gutendex
         Optional<Livro> optLivro = livroRepository.findById(livroApi.id());
         Livro livro;
 
         if (optLivro.isPresent()) {
             livro = optLivro.get();
-            // Atualiza sempre os campos (título, idioma, downloads)
+            // atualiza campos
             livro.setTitulo(livroApi.title());
             livro.setIdioma(livroApi.languages().stream().findFirst().orElse("desconhecido"));
             livro.setDownloads(livroApi.download_count());
-            // Substitui a coleção inteira para evitar ConcurrentModificationException
+            // substitui a coleção para evitar C.M.E
             livro.setAutores(new HashSet<>());
         } else {
             livro = new Livro();
@@ -52,11 +56,10 @@ public class CatalogoService {
             livro.setTitulo(livroApi.title());
             livro.setIdioma(livroApi.languages().stream().findFirst().orElse("desconhecido"));
             livro.setDownloads(livroApi.download_count());
-            // inicializa vazio
             livro.setAutores(new HashSet<>());
         }
 
-        // 2) Processa autores da API
+        // processa autores
         Set<Autor> autores = new HashSet<>();
         for (GutendexAuthor aApi : livroApi.authors()) {
             Autor autor = autorRepository
@@ -71,20 +74,20 @@ public class CatalogoService {
             autores.add(autor);
         }
 
-        // 3) Salva/atualiza autores e associa ao livro
+        // salva/atualiza autores e associa ao livro
         autores = new HashSet<>(autorRepository.saveAll(autores));
         livro.getAutores().addAll(autores);
 
-        // 4) Persiste o livro atualizado
-        Livro livroSalvo = livroRepository.save(livro);
+        // persiste livro
+        Livro salvo = livroRepository.save(livro);
 
-        // Exibe no console, se desejar
-        exibirDadosDoLivro(livroSalvo);
-
-        return livroSalvo;
+        // exibe no console
+        exibirDadosDoLivro(salvo);
+        return salvo;
     }
 
-    private void exibirDadosDoLivro(Livro livro) {
+    /** Exibe dados de um único livro no console */
+    public void exibirDadosDoLivro(Livro livro) {
         System.out.println("---- LIVRO ----");
         System.out.println("Título: " + livro.getTitulo());
         livro.getAutores().forEach(a -> System.out.println("Autor: " + a.getNome()));
@@ -93,7 +96,30 @@ public class CatalogoService {
         System.out.println("----------------");
     }
 
-    // demais métodos...
+    /** Lista e exibe todos os livros registrados */
+    public void exibirTodosOsLivros() {
+        listarLivros().forEach(this::exibirDadosDoLivro);
+    }
+
+    /** Exibe dados de um único autor no console */
+    public void exibirDadosDoAutor(Autor autor) {
+        System.out.println("---- AUTOR ----");
+        System.out.println("Autor: " + autor.getNome());
+        System.out.println("Ano de nascimento: " + autor.getAnoNascimento());
+        System.out.println("Ano de falecimento: " + autor.getAnoFalecimento());
+        List<String> titulos = autor.getLivros()
+                .stream()
+                .map(Livro::getTitulo)
+                .collect(Collectors.toList());
+        System.out.println("Livros: " + titulos);
+        System.out.println("----------------");
+    }
+
+    /** Lista e exibe todos os autores registrados */
+    public void exibirTodosAutores() {
+        listarAutores().forEach(this::exibirDadosDoAutor);
+    }
+
     public List<Livro> listarLivros() {
         return livroRepository.findAll();
     }
