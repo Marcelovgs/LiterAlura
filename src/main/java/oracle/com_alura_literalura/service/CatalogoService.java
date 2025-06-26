@@ -131,7 +131,7 @@ public class CatalogoService {
 
     /** Exibe todos os livros de um determinado idioma */
     public void exibirLivrosPorIdioma(String idioma) {
-        System.out.println("----- LIVROS EM IDIOMA: " + idioma + " -----");
+        System.out.println("----- LIVROS EM IDIOMA: " + idioma + " Não existem livros neste idioma no banco de dados.");
         listarLivrosPorIdioma(idioma).forEach(this::exibirDadosDoLivro);
     }
 }

@@ -22,10 +22,7 @@ public class Livro {
     private String idioma;
     private Integer downloads;
 
-    /**
-     * Quando você faz livro.setAutores(...), trocamos toda a instância
-     * de autores, evitando ConcurrentModificationException
-     */
+
     @ManyToMany(fetch = FetchType.LAZY,
             cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(
@@ -35,10 +32,7 @@ public class Livro {
     )
     private Set<Autor> autores = new HashSet<>();
 
-    /**
-     * Sobrescreve o conjunto inteiro de autores.
-     * Evita mexer na coleção original do Hibernate
-     */
+
     public void setAutores(Set<Autor> autores) {
         this.autores = autores;
     }
