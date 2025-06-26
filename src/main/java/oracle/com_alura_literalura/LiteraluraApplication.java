@@ -45,29 +45,34 @@ public class LiteraluraApplication implements CommandLineRunner {
                     String titulo = scanner.nextLine();
                     catalogoService.buscarLivroPorTitulo(titulo);
                     break;
+
                 case 2:
                     catalogoService.exibirTodosOsLivros();
                     break;
+
                 case 3:
                     catalogoService.exibirTodosAutores();
                     break;
+
                 case 4:
                     System.out.print("Digite o ano: ");
                     int ano = scanner.nextInt();
                     scanner.nextLine();
-                    catalogoService.listarAutoresVivosEm(ano)
-                            .forEach(a -> System.out.println("Autor: " + a.getNome()));
+                    catalogoService.exibirAutoresVivosEm(ano);
                     break;
+
                 case 5:
                     System.out.println("Idiomas disponíveis: es, en, fr, pt");
                     System.out.print("Digite o idioma: ");
                     String idioma = scanner.nextLine();
-                    catalogoService.listarLivrosPorIdioma(idioma)
-                            .forEach(l -> System.out.println("Título: " + l.getTitulo()));
+                    catalogoService.exibirLivrosPorIdioma(idioma);
                     break;
+
                 case 0:
                     System.out.println("Saindo...");
+                    scanner.close();
                     return;
+
                 default:
                     System.out.println("Opção inválida, tente novamente.");
             }

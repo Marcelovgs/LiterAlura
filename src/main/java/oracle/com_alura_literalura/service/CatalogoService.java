@@ -1,10 +1,9 @@
-// src/main/java/oracle/com_alura_literalura/service/CatalogoService.java
 package oracle.com_alura_literalura.service;
 
-import oracle.com_alura_literalura.model.Livro;
 import oracle.com_alura_literalura.model.Autor;
-import oracle.com_alura_literalura.repository.LivroRepository;
+import oracle.com_alura_literalura.model.Livro;
 import oracle.com_alura_literalura.repository.AutorRepository;
+import oracle.com_alura_literalura.repository.LivroRepository;
 import oracle.com_alura_literalura.dto.GutendexAuthor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,62 +30,47 @@ public class CatalogoService {
         this.autorRepository = autorRepository;
     }
 
-    /**
-     * Busca um livro na API Gutendex, salva/atualiza no banco e exibe no console.
-     */
+    /** Busca um livro na API, salva/atualiza no banco e exibe no console */
     public Livro buscarLivroPorTitulo(String titulo) {
-        var livroApi = gutendexService
-                .buscarPrimeiroLivroPorTitulo(titulo)
+        var livroApi = gutendexService.buscarPrimeiroLivroPorTitulo(titulo)
                 .orElseThrow(() -> new IllegalArgumentException("Livro não encontrado na API"));
 
         Optional<Livro> optLivro = livroRepository.findById(livroApi.id());
-        Livro livro;
+        Livro livro = optLivro.orElseGet(() -> {
+            Livro novo = new Livro();
+            novo.setIdGutendex(livroApi.id());
+            return novo;
+        });
 
-        if (optLivro.isPresent()) {
-            livro = optLivro.get();
-            // atualiza campos
-            livro.setTitulo(livroApi.title());
-            livro.setIdioma(livroApi.languages().stream().findFirst().orElse("desconhecido"));
-            livro.setDownloads(livroApi.download_count());
-            // substitui a coleção para evitar C.M.E
-            livro.setAutores(new HashSet<>());
-        } else {
-            livro = new Livro();
-            livro.setIdGutendex(livroApi.id());
-            livro.setTitulo(livroApi.title());
-            livro.setIdioma(livroApi.languages().stream().findFirst().orElse("desconhecido"));
-            livro.setDownloads(livroApi.download_count());
-            livro.setAutores(new HashSet<>());
-        }
+        // atualiza campos
+        livro.setTitulo(livroApi.title());
+        livro.setIdioma(livroApi.languages().stream().findFirst().orElse("desconhecido"));
+        livro.setDownloads(livroApi.download_count());
+        livro.setAutores(new HashSet<>());
 
         // processa autores
-        Set<Autor> autores = new HashSet<>();
-        for (GutendexAuthor aApi : livroApi.authors()) {
-            Autor autor = autorRepository
-                    .findByNomeIgnoreCase(aApi.name())
-                    .orElseGet(() -> {
-                        Autor novo = new Autor();
-                        novo.setNome(aApi.name());
-                        novo.setAnoNascimento(aApi.birth_year());
-                        novo.setAnoFalecimento(aApi.death_year());
-                        return novo;
-                    });
-            autores.add(autor);
-        }
+        Set<Autor> autores = livroApi.authors()
+                .stream()
+                .map(aApi -> autorRepository
+                        .findByNomeIgnoreCase(aApi.name())
+                        .orElseGet(() -> {
+                            Autor novo = new Autor();
+                            novo.setNome(aApi.name());
+                            novo.setAnoNascimento(aApi.birth_year());
+                            novo.setAnoFalecimento(aApi.death_year());
+                            return novo;
+                        })
+                ).collect(Collectors.toSet());
 
-        // salva/atualiza autores e associa ao livro
         autores = new HashSet<>(autorRepository.saveAll(autores));
         livro.getAutores().addAll(autores);
 
-        // persiste livro
         Livro salvo = livroRepository.save(livro);
-
-        // exibe no console
         exibirDadosDoLivro(salvo);
         return salvo;
     }
 
-    /** Exibe dados de um único livro no console */
+    /** Exibe os dados de um livro */
     public void exibirDadosDoLivro(Livro livro) {
         System.out.println("---- LIVRO ----");
         System.out.println("Título: " + livro.getTitulo());
@@ -96,12 +80,26 @@ public class CatalogoService {
         System.out.println("----------------");
     }
 
-    /** Lista e exibe todos os livros registrados */
+    /** Lista e exibe todos os livros */
     public void exibirTodosOsLivros() {
         listarLivros().forEach(this::exibirDadosDoLivro);
     }
 
-    /** Exibe dados de um único autor no console */
+    public List<Livro> listarLivros() {
+        return livroRepository.findAll();
+    }
+
+    /** Lista autores cadastrados */
+    public List<Autor> listarAutores() {
+        return autorRepository.findAll();
+    }
+
+    /** Lista autores vivos em um determinado ano */
+    public List<Autor> listarAutoresVivosEm(int ano) {
+        return autorRepository.autoresVivosEm(ano);
+    }
+
+    /** Exibe os dados de um autor */
     public void exibirDadosDoAutor(Autor autor) {
         System.out.println("---- AUTOR ----");
         System.out.println("Autor: " + autor.getNome());
@@ -115,24 +113,25 @@ public class CatalogoService {
         System.out.println("----------------");
     }
 
-    /** Lista e exibe todos os autores registrados */
+    /** Lista e exibe todos os autores */
     public void exibirTodosAutores() {
         listarAutores().forEach(this::exibirDadosDoAutor);
     }
 
-    public List<Livro> listarLivros() {
-        return livroRepository.findAll();
+    /** Exibe autores vivos em um ano específico */
+    public void exibirAutoresVivosEm(int ano) {
+        System.out.println("----- AUTORES VIVOS EM " + ano + " -----");
+        listarAutoresVivosEm(ano).forEach(this::exibirDadosDoAutor);
     }
 
-    public List<Autor> listarAutores() {
-        return autorRepository.findAll();
-    }
-
-    public List<Autor> listarAutoresVivosEm(int ano) {
-        return autorRepository.autoresVivosEm(ano);
-    }
-
+    /** Lista livros por idioma */
     public List<Livro> listarLivrosPorIdioma(String idioma) {
         return livroRepository.findByIdiomaIgnoreCase(idioma);
+    }
+
+    /** Exibe todos os livros de um determinado idioma */
+    public void exibirLivrosPorIdioma(String idioma) {
+        System.out.println("----- LIVROS EM IDIOMA: " + idioma + " -----");
+        listarLivrosPorIdioma(idioma).forEach(this::exibirDadosDoLivro);
     }
 }
